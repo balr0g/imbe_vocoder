@@ -1,0 +1,17 @@
+
+# This directory contains Pavel Yazev's Project 25 IMBE Encoder/Decoder
+# It also contains KA1RBI's interface module for GNU Radio 
+
+If you're building from SVN, you'll need to use this sequence, since
+SVN doesn't contain configure or the generated Makefiles.
+
+  $ ./bootstrap
+  $ ./configure
+  $ make
+  $ make check
+
+For increased performance, you may wish to consider compiling with higher
+optimization, for example:
+  $ ./configure CXXFLAGS="-O3"
+or
+  $ ./configure CXXFLAGS="-O6"
