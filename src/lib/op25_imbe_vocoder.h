@@ -76,6 +76,14 @@ private:
 
   // Where all the action really happens
 
+  int general_work_decode (int noutput_items,
+		    gr_vector_int &ninput_items,
+		    gr_vector_const_void_star &input_items,
+		    gr_vector_void_star &output_items);
+  int general_work_encode (int noutput_items,
+		    gr_vector_int &ninput_items,
+		    gr_vector_const_void_star &input_items,
+		    gr_vector_void_star &output_items);
   int general_work (int noutput_items,
 		    gr_vector_int &ninput_items,
 		    gr_vector_const_void_star &input_items,
@@ -107,6 +115,7 @@ private:
 	bit_vector f_body;
 
 	std::deque<UWord8> output_queue;
+	std::deque<uint16_t> output_queue_decode;
 
 	bool opt_encode_flag;
 	bool opt_dump_raw_vectors;
@@ -167,7 +176,7 @@ private:
 	void add_sample(Word16 samp);
 	void compress_samp(Word16 samp);
 	void init_sock(char* udp_host, int udp_port);
-	void decode_init(void);
+	void decode_init(IMBE_PARAM *imbe_param);
 	void decode(IMBE_PARAM *imbe_param, Word16 *frame_vector, Word16 *snd);
 	void encode_init(void);
 };

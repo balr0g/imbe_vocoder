@@ -33,6 +33,8 @@
 
 #include <vector>
 #include <stdint.h>
+#include <stdio.h>
+#include <string.h>
 #include <errno.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -62,27 +64,25 @@ op25_imbe_make_vocoder (bool encode_flag, bool verbose_flag, int stretch_amt, ch
   return op25_imbe_vocoder_sptr (new op25_imbe_vocoder (encode_flag, verbose_flag, stretch_amt, udp_host, udp_port, raw_vectors_flag));
 }
 
-/*
- * Specify constraints on number of input and output streams.
- * This info is used to construct the input and output signatures
- * (2nd & 3rd args to gr_block's constructor).  The input and
- * output signatures are used by the runtime system to
- * check that a valid number and type of inputs and outputs
- * are connected to this block.  In this case, we accept
- * only 1 input and 1 output.
- */
-static const int MIN_IN = 1;	// mininum number of input streams
-static const int MAX_IN = 1;	// maximum number of input streams
-static const int MIN_OUT = 1;	// minimum number of output streams
-static const int MAX_OUT = 1;	// maximum number of output streams
+//////////////////////////////////////////////////////////////
+//	enc/dec		udp	operation
+//	dec		no	byte input; short output
+//	dec		yes	byte input; null output
+//	enc		no	short input; char output
+//	enc		yes	short input; null output
+
+#define M_IN(encode_flag, udp_port)  (1)
+#define M_OUT(encode_flag, udp_port) ((udp_port) ? 0 : 1)
+#define S_IN(encode_flag, udp_port)  ((encode_flag) ? sizeof(uint16_t) : sizeof(uint8_t))
+#define S_OUT(encode_flag, udp_port) ((udp_port) ? 0 : ((encode_flag) ? sizeof(uint8_t) : sizeof(uint16_t)))
 
 /*
  * The private constructor
  */
 op25_imbe_vocoder::op25_imbe_vocoder (bool encode_flag, bool verbose_flag, int stretch_amt, char* udp_host, int udp_port, bool raw_vectors_flag)
-  : gr_block ("vocoder",
-	      gr_make_io_signature (MIN_IN, MAX_IN, sizeof (short)),
-	      gr_make_io_signature ((udp_port == 0) ? 1 : 0, (udp_port == 0) ? 1 : 0, (udp_port == 0) ? sizeof(uint8_t) : 0)),
+	: gr_block ("vocoder",
+	      gr_make_io_signature (M_IN(encode_flag, udp_port), M_IN(encode_flag, udp_port), S_IN(encode_flag, udp_port)),
+	      gr_make_io_signature (M_OUT(encode_flag, udp_port), M_OUT(encode_flag, udp_port), S_OUT(encode_flag, udp_port))),
 	frame_cnt(0),
 	write_sock(0),
 	write_bufp(0),
@@ -129,7 +129,7 @@ op25_imbe_vocoder::op25_imbe_vocoder (bool encode_flag, bool verbose_flag, int s
 	fprintf(stderr,"This is free software, and you are welcome to redistribute it\n");
 	fprintf(stderr,"under certain conditions; see the file ``LICENSE'' for details.\n");
 
-	decode_init();
+	decode_init(&my_imbe_param);
 	encode_init();
 
 	opt_encode_flag = encode_flag;
@@ -147,8 +147,14 @@ op25_imbe_vocoder::op25_imbe_vocoder (bool encode_flag, bool verbose_flag, int s
 	}
 
 	if (opt_udp_port == 0)
-		// local output to gr source
-		set_output_multiple(P25_VOICE_FRAME_SIZE >> 1);
+		if (encode_flag) {
+			// local output to gr source
+			// encoding: an LDU's worth of dibits
+			set_output_multiple(P25_VOICE_FRAME_SIZE >> 1);
+		} else {
+			// decoding: an LDU's worth of audio samples
+			// set_output_multiple(FRAME * nof_voice_codewords);
+		}
 	else
 		// remote UDP output
 		init_sock(udp_host, opt_udp_port);
@@ -235,15 +241,21 @@ void op25_imbe_vocoder::rxchar(char c)
 		if (c == '\n') {
 			rxbuf[rxbufp] = 0;
 			sscanf(rxbuf, "%x %x %x %x %x %x %x %x", &u[0], &u[1], &u[2], &u[3], &u[4], &u[5], &u[6], &u[7]);
+			rxbufp = 0;
 			for (int i=0; i < 8; i++) {
 				frame_vector[i] = u[i];
 			}
+	/* TEST*/	frame_vector[7] >>= 1;
 			// decode 88 bits, outputs 160 sound samples (8000 rate)
 			decode(&my_imbe_param, frame_vector, snd);
-			// FIXME - output data to GR source
-			fwrite(snd, sizeof(short), FRAME, stdout);
-			fflush(stdout);
-			rxbufp = 0;
+			if (opt_udp_port > 0) {
+				sendto(write_sock, snd, FRAME * sizeof(uint16_t), 0, (struct sockaddr*)&write_sock_addr, sizeof(write_sock_addr));
+			} else {
+				// add generated samples to output queue
+				for (int i = 0; i < FRAME; i++) {
+					output_queue_decode.push_back(snd[i]);
+				}
+			}
 		}
 		return;
 	}
@@ -337,16 +349,46 @@ void op25_imbe_vocoder::init_sock(char* udp_host, int udp_port)
 void
 op25_imbe_vocoder::forecast(int nof_output_items, gr_vector_int &nof_input_items_reqd)
 {
-   /* This block consumes 8000 symbols/s and produces 4800
+   /* When encoding, this block consumes 8000 symbols/s and produces 4800
     * samples/s. That's a sampling rate of 5/3 or 1.66667.
+    *
+    * When decoding, this block consumes 4800 symbols/s and produces 8000
+    * samples/s. That's a sampling rate of 3/5 or 0.6.
     */
    const size_t nof_inputs = nof_input_items_reqd.size();
-   const int nof_samples_reqd = 1.66667 * nof_output_items;
+   const int nof_samples_reqd = (opt_encode_flag) ? (1.66667 * nof_output_items) : (0.6 * nof_output_items);
    std::fill(&nof_input_items_reqd[0], &nof_input_items_reqd[nof_inputs], nof_samples_reqd);
 }
 
 int 
-op25_imbe_vocoder::general_work (int noutput_items,
+op25_imbe_vocoder::general_work_decode (int noutput_items,
+			       gr_vector_int &ninput_items,
+			       gr_vector_const_void_star &input_items,
+			       gr_vector_void_star &output_items)
+{
+  const char *in = (const char *) input_items[0];
+
+  for (int i = 0; i < ninput_items[0]; i++){
+    rxchar(in[i]);
+  }
+
+  // Tell runtime system how many input items we consumed on
+  // each input stream.
+
+  consume_each (ninput_items[0]);
+
+  uint16_t *out = reinterpret_cast<uint16_t*>(output_items[0]);
+  const int n = std::min(static_cast<int>(output_queue_decode.size()), noutput_items);
+  if(0 < n) {
+     copy(output_queue_decode.begin(), output_queue_decode.begin() + n, out);
+     output_queue_decode.erase(output_queue_decode.begin(), output_queue_decode.begin() + n);
+  }
+  // Tell runtime system how many output items we produced.
+  return n;
+}
+
+int 
+op25_imbe_vocoder::general_work_encode (int noutput_items,
 			       gr_vector_int &ninput_items,
 			       gr_vector_const_void_star &input_items,
 			       gr_vector_void_star &output_items)
@@ -373,4 +415,16 @@ op25_imbe_vocoder::general_work (int noutput_items,
   }
   // Tell runtime system how many output items we produced.
   return n;
+}
+
+int 
+op25_imbe_vocoder::general_work (int noutput_items,
+			       gr_vector_int &ninput_items,
+			       gr_vector_const_void_star &input_items,
+			       gr_vector_void_star &output_items)
+{
+	if (opt_encode_flag)
+		return general_work_encode(noutput_items, ninput_items, input_items, output_items);
+	else
+		return general_work_decode(noutput_items, ninput_items, input_items, output_items);
 }

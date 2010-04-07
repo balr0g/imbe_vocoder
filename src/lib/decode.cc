@@ -33,13 +33,22 @@
 #include "dsp_sub.h"
 #include "op25_imbe_vocoder.h"
 
+#include <string.h>
 
 
-void op25_imbe_vocoder::decode_init(void)
+
+void op25_imbe_vocoder::decode_init(IMBE_PARAM *imbe_param)
 {
 	v_synt_init();
 	uv_synt_init();
 	sa_decode_init();
+
+	// Make previous frame for the first frame
+	memset((char *)imbe_param, 0, sizeof(IMBE_PARAM));
+	imbe_param->fund_freq = 0x0cf6474a;
+	imbe_param->num_harms = 9;
+	imbe_param->num_bands = 3;
+
 }
 
 

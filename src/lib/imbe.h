@@ -62,7 +62,7 @@ typedef struct
 } Cmplx16;
 
 #if 0
-void decode_init(void);
+void decode_init(IMBE_PARAM *imbe_param);
 void decode(IMBE_PARAM *imbe_param, Word16 *frame_vector, Word16 *snd);
 #endif
 
