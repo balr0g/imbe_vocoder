@@ -54,6 +54,8 @@
 #include <op25_imbe_frame.h>
 #include <gr_io_signature.h>
 
+#include <imbe_vocoder.h>
+
 /*
  * Create a new instance of op25_imbe_vocoder and return
  * a boost shared_ptr.  This is effectively the public constructor.
@@ -73,8 +75,8 @@ op25_imbe_make_vocoder (bool encode_flag, bool verbose_flag, int stretch_amt, ch
 
 #define M_IN(encode_flag, udp_port)  (1)
 #define M_OUT(encode_flag, udp_port) ((udp_port) ? 0 : 1)
-#define S_IN(encode_flag, udp_port)  ((encode_flag) ? sizeof(uint16_t) : sizeof(uint8_t))
-#define S_OUT(encode_flag, udp_port) ((udp_port) ? 0 : ((encode_flag) ? sizeof(uint8_t) : sizeof(uint16_t)))
+#define S_IN(encode_flag, udp_port)  ((encode_flag) ? sizeof(int16_t) : sizeof(uint8_t))
+#define S_OUT(encode_flag, udp_port) ((udp_port) ? 0 : ((encode_flag) ? sizeof(uint8_t) : sizeof(int16_t)))
 
 /*
  * The private constructor
@@ -94,44 +96,8 @@ op25_imbe_vocoder::op25_imbe_vocoder (bool encode_flag, bool verbose_flag, int s
 	sampbuf_ct(0),
 	stretch_count(0),
 	save_l(0),
-	f_body(P25_VOICE_FRAME_SIZE),
-	prev_prev_e_p(0),
-	seed(1),
-	num_harms_prev1(0),
-	num_harms_prev2(0),
-	num_harms_prev3(0),
-	fund_freq_prev(0),
-	th_max(0),
-	dc_rmv_mem(0)
+	f_body(P25_VOICE_FRAME_SIZE)
 {
-	memset(wr_array, 0, sizeof(wr_array));
-	memset(wi_array, 0, sizeof(wi_array));
-	memset(pitch_est_buf, 0, sizeof(pitch_est_buf));
-	memset(pitch_ref_buf, 0, sizeof(pitch_ref_buf));
-	memset(pe_lpf_mem, 0, sizeof(pe_lpf_mem));
-	memset(fft_buf, 0, sizeof(fft_buf));
-	memset(write_buf, 0, sizeof(write_buf));
-	memset(rxbuf, 0, sizeof(rxbuf));
-	memset(sampbuf, 0, sizeof(sampbuf));
-	memset(sa_prev1, 0, sizeof(sa_prev1));
-	memset(sa_prev2, 0, sizeof(sa_prev2));
-	memset(uv_mem, 0, sizeof(uv_mem));
-	memset(ph_mem, 0, sizeof(ph_mem));
-	memset(vu_dsn_prev, 0, sizeof(vu_dsn_prev));
-	memset(sa_prev3, 0, sizeof(sa_prev3));
-	memset(v_uv_dsn, 0, sizeof(v_uv_dsn));
-	memset(&my_imbe_param, 0, sizeof(IMBE_PARAM));
-
-	fprintf(stderr,"Project 25 IMBE Encoder/Decoder Fixed-Point implementation\n");
-	fprintf(stderr,"Developed by Pavel Yazev E-mail: pyazev@gmail.com\n");
-	fprintf(stderr,"Version 1.0 (c) Copyright 2009\n");
-	fprintf(stderr,"This program comes with ABSOLUTELY NO WARRANTY.\n");
-	fprintf(stderr,"This is free software, and you are welcome to redistribute it\n");
-	fprintf(stderr,"under certain conditions; see the file ``LICENSE'' for details.\n");
-
-	decode_init(&my_imbe_param);
-	encode_init();
-
 	opt_encode_flag = encode_flag;
 	opt_dump_raw_vectors = raw_vectors_flag;
 	opt_verbose = verbose_flag;
@@ -170,7 +136,7 @@ op25_imbe_vocoder::~op25_imbe_vocoder ()
 static const int STATS_INTERVAL = 20;
 static const int SAMP_INTERVAL = 8192;
 
-void op25_imbe_vocoder::append_imbe_codeword(bit_vector& frame_body, Word16 frame_vector[], unsigned int& codeword_ct)
+void op25_imbe_vocoder::append_imbe_codeword(bit_vector& frame_body, int16_t frame_vector[], unsigned int& codeword_ct)
 {
 	voice_codeword cw(voice_codeword_sz);
 	uint8_t obuf[P25_VOICE_FRAME_SIZE/2];
@@ -233,8 +199,8 @@ void op25_imbe_vocoder::append_imbe_codeword(bit_vector& frame_body, Word16 fram
 
 void op25_imbe_vocoder::rxchar(char c)
 {
-	Word16 snd[FRAME];
-	Word16 frame_vector[8];
+	int16_t snd[FRAME];
+	int16_t frame_vector[8];
 	int u[8];
 
 	if (c < ' ') {
@@ -247,7 +213,7 @@ void op25_imbe_vocoder::rxchar(char c)
 			}
 	/* TEST*/	frame_vector[7] >>= 1;
 			// decode 88 bits, outputs 160 sound samples (8000 rate)
-			decode(&my_imbe_param, frame_vector, snd);
+			vocoder.imbe_decode(frame_vector, snd);
 			if (opt_udp_port > 0) {
 				sendto(write_sock, snd, FRAME * sizeof(uint16_t), 0, (struct sockaddr*)&write_sock_addr, sizeof(write_sock_addr));
 			} else {
@@ -265,12 +231,12 @@ void op25_imbe_vocoder::rxchar(char c)
 	}
 }
 
-void op25_imbe_vocoder::compress_frame(Word16 snd[])
+void op25_imbe_vocoder::compress_frame(int16_t snd[])
 {
-	Word16 frame_vector[8];	
+	int16_t frame_vector[8];	
 
 	// encode 160 audio samples into 88 bits (u0-u7)
-	encode(&my_imbe_param, frame_vector, (Word16*) snd);
+	vocoder.imbe_encode(frame_vector, snd);
 
 	// if dump option, dump u0-u7 to output
 	if (opt_dump_raw_vectors) {
@@ -287,7 +253,7 @@ void op25_imbe_vocoder::compress_frame(Word16 snd[])
 	append_imbe_codeword(f_body, frame_vector, codeword_ct);
 }
 
-void op25_imbe_vocoder::add_sample(Word16 samp)
+void op25_imbe_vocoder::add_sample(int16_t samp)
 {
 	// add one sample to 160-sample frame buffer and process if filled
 	sampbuf[sampbuf_ct++] = samp;
@@ -297,7 +263,7 @@ void op25_imbe_vocoder::add_sample(Word16 samp)
 	}
 
 	// track signal amplitudes
-	Word16 asamp = (samp < 0) ? 0 - samp : samp;
+	int16_t asamp = (samp < 0) ? 0 - samp : samp;
 	peak = (asamp > peak) ? asamp : peak;
 	if (++samp_ct >= SAMP_INTERVAL) {
 		peak_amplitude = peak;
@@ -306,7 +272,7 @@ void op25_imbe_vocoder::add_sample(Word16 samp)
 	}
 }
 
-void op25_imbe_vocoder::compress_samp(Word16 samp)
+void op25_imbe_vocoder::compress_samp(int16_t samp)
 {
 	// Apply sample rate slew to accomodate sound card rate discrepancy -
 	// workaround for USRP underrun problem occurring when sound card

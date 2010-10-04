@@ -33,10 +33,10 @@
 #include <stdio.h>
 #include <math.h>
 #include "encode.h"
-#include "op25_imbe_vocoder.h"
+#include "imbe_vocoder.h"
 
 
-void op25_imbe_vocoder::sa_encode_init(void)
+void imbe_vocoder::sa_encode_init(void)
 {
 	Word16 i;
 	num_harms_prev2 = 30;
@@ -44,7 +44,7 @@ void op25_imbe_vocoder::sa_encode_init(void)
 		sa_prev2[i] = 0;
 }
 
-void op25_imbe_vocoder::sa_encode(IMBE_PARAM *imbe_param)
+void imbe_vocoder::sa_encode(IMBE_PARAM *imbe_param)
 {
 	Word16 gain_vec[6], gain_r[6];
 	UWord16 index, i, j, num_harms;

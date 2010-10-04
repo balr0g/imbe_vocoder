@@ -70,6 +70,7 @@ _op25_imbe_la_SOURCES = 			\
 	encode.cc \
 	math_sub.cc \
 	op25_imbe_vocoder.cc \
+	imbe_vocoder.cc \
 	pe_lpf.cc \
 	pitch_est.cc \
 	pitch_ref.cc \
