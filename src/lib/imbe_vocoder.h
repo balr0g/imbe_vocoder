@@ -10,12 +10,12 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "imbe.h"
-#include "dsp_sub.h"
-#include "basic_op.h"
-#include "math_sub.h"
-#include "encode.h"
-#include "decode.h"
+#include <imbe.h>
+#include <dsp_sub.h>
+#include <basic_op.h>
+#include <math_sub.h>
+#include <encode.h>
+#include <decode.h>
 
 class imbe_vocoder
 {
