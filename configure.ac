@@ -21,38 +21,22 @@ dnl
 
 AC_INIT
 AC_PREREQ(2.57)
-AC_CONFIG_SRCDIR([src/lib/op25_imbe.i])
 AM_CONFIG_HEADER(config.h)
 AC_CANONICAL_TARGET([])
-AM_INIT_AUTOMAKE(gr-op25_imbe,0.1)
+AM_INIT_AUTOMAKE(imbe_vocoder,0.1)
 
-GR_X86_64
 dnl LF_CONFIGURE_CC
 LF_CONFIGURE_CXX
 LF_SET_WARNINGS
-GR_SET_GPROF
-GR_SET_PROF
-GR_PROG_AS
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
+AC_PROG_CPP
+AC_PROG_CXX
 AC_PROG_INSTALL
 
-AC_LIBTOOL_WIN32_DLL
 AC_ENABLE_SHARED	dnl do build shared libraries
 AC_DISABLE_STATIC	dnl don't build static libraries
 AC_PROG_LIBTOOL
-
-dnl Locate python, SWIG, etc
-GR_NO_UNDEFINED
-GR_SCRIPTING
-
-dnl Checks for libraries.
-
-dnl check for threads (mandatory)
-GR_OMNITHREAD
-
-CFLAGS="${CFLAGS} $PTHREAD_CFLAGS"
-CXXFLAGS="${CXXFLAGS} $PTHREAD_CFLAGS"
 
 if test "x$CXX_FOR_BUILD" = x
 then
@@ -75,29 +59,10 @@ AC_HEADER_TIME
 dnl Checks for library functions.
 AC_CHECK_FUNCS([])
 
-dnl Check for Mingw support
-GR_PWIN32
-
-PKG_CHECK_MODULES(GNURADIO_CORE, gnuradio-core >= 2)
-LIBS="$LIBS $GNURADIO_CORE_LIBS"
-
-dnl Define where to find boost includes
-dnl defines BOOST_CFLAGS
-GR_REQUIRE_BOOST_INCLUDES
-
-STD_DEFINES_AND_INCLUDES="$GNURADIO_CORE_CFLAGS $BOOST_CFLAGS"
-AC_SUBST(STD_DEFINES_AND_INCLUDES)
- 
 AC_CONFIG_FILES([\
 	  Makefile \
-	  config/Makefile \
 	  src/Makefile \
 	  src/lib/Makefile \
-	  src/python/Makefile \
-	  src/python/run_tests \
 	])
-
-dnl run_tests is created from run_tests.in.  Make it executable.
-AC_CONFIG_COMMANDS([run_tests], [chmod +x src/python/run_tests])
 
 AC_OUTPUT

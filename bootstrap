@@ -22,7 +22,7 @@
 
 rm -fr config.cache autom4te*.cache
 
-aclocal -I config
+aclocal
 autoconf
 autoheader
 libtoolize --automake

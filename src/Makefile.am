@@ -19,4 +19,4 @@
 # Boston, MA 02111-1307, USA.
 # 
 
-SUBDIRS = lib python
+SUBDIRS = lib

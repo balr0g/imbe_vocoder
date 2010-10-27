@@ -19,11 +19,9 @@
 # Boston, MA 02111-1307, USA.
 # 
 
-include $(top_srcdir)/Makefile.common
-
 EXTRA_DIST = bootstrap configure config.h.in .buildpri
-SUBDIRS = config src
-DIST_SUBDIRS = config src
+SUBDIRS = src
+DIST_SUBDIRS = src
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA =
