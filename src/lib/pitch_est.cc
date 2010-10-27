@@ -193,6 +193,7 @@ void imbe_vocoder::pitch_est(IMBE_PARAM *imbe_param, Word16 *frames_buf)
 	UWord32 UL_tmp;
 	Word16 e_p_cur, pb, pf, ceb, s_tmp;
 	Word16 cef_est, cef, p0_est, p0, p1, p2, p1_max_index, p2_max_index, e1p1_e2p2_est, e1p1_e2p2; 
+        Word16 e_p_arr2_min[203];
 
 	// Calculate E(p) function for current and two future frames
 	e_p(&frames_buf[0], e_p_arr0);
@@ -233,45 +234,41 @@ void imbe_vocoder::pitch_est(IMBE_PARAM *imbe_param, Word16 *frames_buf)
 	cef_est = e_p_arr0[p0] + e_p_arr1[p0] + e_p_arr2[p0];
 	e1p1_e2p2 = 1;
 
-	while(p0 < 203)
-	{
-		e1p1_e2p2_est = e_p_arr1[p0] + e_p_arr2[p0];
-
-		p1 = HI_BYTE(min_max_tbl[p0]);
-		p1_max_index = LO_BYTE(min_max_tbl[p0]);
-	
-		while(p1 <= p1_max_index)
-		{
-			p2 = HI_BYTE(min_max_tbl[p1]);
-			p2_max_index = LO_BYTE(min_max_tbl[p1]); 
-
-			s_tmp = sub(e1p1_e2p2_est, e_p_arr1[p1]);
-
-			while(p2 <= p2_max_index)
-			{
-				//e1p1_e2p2 = add(e_p_arr1[p1], e_p_arr2[p2]);
-				//if(e1p1_e2p2 < e1p1_e2p2_est)
-				if(e_p_arr2[p2] < s_tmp)
-				{
-					//printf("p0 = %d  p1 = %d  p2 = %d %g\n", p0, p1, p2, (double)e1p1_e2p2/4096.);
-					e1p1_e2p2_est = add(e_p_arr1[p1], e_p_arr2[p2]);//e1p1_e2p2;  
-					s_tmp = e_p_arr2[p2];					
-			    }
-				p2++;
-			}
-			p1++;
-		}
-
-		e1p1_e2p2_est_save[p0] = e1p1_e2p2_est;
-
-		cef = add(e_p_arr0[p0], e1p1_e2p2_est);
-		if(cef < cef_est)
-		{
-			cef_est	= cef;
-			p0_est  = p0;
-		}     
-		p0++;
-	} 
+            p1 = 0;
+            while(p1 < 203)
+            {
+                        p2 = HI_BYTE(min_max_tbl[p1]);
+                        p2_max_index = LO_BYTE(min_max_tbl[p1]);
+                        s_tmp = e_p_arr2[p1];
+                        while(p2 <= p2_max_index)
+                        {
+                                   if(e_p_arr2[p2] < s_tmp)
+                                               s_tmp = e_p_arr2[p2];                                                          
+                                   p2++;
+                        }
+                        e_p_arr2_min[p1] = s_tmp;
+                        p1++;
+            }
+            while(p0 < 203)
+            {
+                        e1p1_e2p2_est = e_p_arr1[p0] + e_p_arr2_min[p0];
+                        p1 = HI_BYTE(min_max_tbl[p0]);
+                        p1_max_index = LO_BYTE(min_max_tbl[p0]);
+                        while(p1 <= p1_max_index)
+                        {                     
+                                   if(add(e_p_arr1[p1], e_p_arr2_min[p1]) < e1p1_e2p2_est)                          
+                                               e1p1_e2p2_est = add(e_p_arr1[p1], e_p_arr2_min[p1]);                                                                 
+                                   p1++;
+                        }
+                        e1p1_e2p2_est_save[p0] = e1p1_e2p2_est;
+                        cef = add(e_p_arr0[p0], e1p1_e2p2_est);
+                        if(cef < cef_est)
+                        {
+                                   cef_est = cef;
+                                   p0_est  = p0;
+                        }    
+                        p0++;
+            }
 
 	pf = p0_est;
 	// Sub-multiples analysis

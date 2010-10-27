@@ -48,6 +48,7 @@ void imbe_vocoder::encode_init(void)
 	pitch_est_init();
 	fft_init();
 	dc_rmv_mem = 0;
+	sa_encode_init();
 }
 
 

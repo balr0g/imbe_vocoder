@@ -93,7 +93,7 @@ void imbe_vocoder::sa_encode(IMBE_PARAM *imbe_param)
 	for(i = 0; i < num_harms; i++)
 	{
 		index   = (UWord16)(k_acc >> 24);                    // Get integer part
-		si_coef = (Word16)((k_acc - (index << 24)) >> 9);    // Get fractional part 
+		si_coef = (Word16)((k_acc - ((UWord32)index << 24)) >> 9); // Get fractional part 
 
 
 		if(si_coef == 0)
@@ -268,7 +268,7 @@ void imbe_vocoder::sa_encode(IMBE_PARAM *imbe_param)
 	for(i = 0; i < num_harms; i++)
 	{
 		index   = (UWord16)(k_acc >> 24);                    // Get integer part
-		si_coef = (Word16)((k_acc - (index << 24)) >> 9);    // Get fractional part 
+		si_coef = (Word16)((k_acc - ((UWord32)index << 24)) >> 9); // Get fractional part 
 
 		if(si_coef == 0)
 		{

@@ -108,6 +108,8 @@ void sa_enh(IMBE_PARAM *imbe_param)
 	nm2     = norm_l(w0);
 	L_den   = L_mpy_ls(L_den, extract_h(L_shl(w0, nm2)));     // Calculate w0 * Rm0 * (Rm0^2 - Rm1^2)
 	nm1    += nm2;                                            // total denominator shift
+
+	if (L_den < 1) return;  // fix bug infinite loop due to invalid input
 	
 	L_sum_Rm02_Rm12 = L_add(L_shr(L_Rm0_2, 2), L_shr(L_Rm1_2, 2));
 	Rm0Rm1 = shr(mult_r(Rm0_s, Rm1_s), 1); 
