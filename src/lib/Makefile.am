@@ -1,8 +1,8 @@
 
-lib_LTLIBRARIES = lib_imbe_vocoder.la
+lib_LIBRARIES = libimbe_vocoder.a
 
 # These are the source files that go into the shared library
-lib_imbe_vocoder_la_SOURCES = 			\
+libimbe_vocoder_a_SOURCES = 			\
 	aux_sub.cc \
 	basicop2.cc \
 	ch_decode.cc \
