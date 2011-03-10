@@ -1,6 +1,8 @@
 
 lib_LIBRARIES = libimbe_vocoder.a
 
+libimbe_vocoder_a_CXXFLAGS = -fPIC
+
 # These are the source files that go into the shared library
 libimbe_vocoder_a_SOURCES = 			\
 	aux_sub.cc \
