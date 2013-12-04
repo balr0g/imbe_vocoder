@@ -35,12 +35,12 @@
 #include "v_uv_det.h"
 #include "sa_encode.h"
 #include "ch_encode.h"
-#include "imbe_vocoder.h"
+#include "imbe_vocoder_impl.h"
 
 
 
 
-void imbe_vocoder::encode_init(void)
+void imbe_vocoder_impl::encode_init(void)
 {
 	v_zap(pitch_est_buf, PITCH_EST_BUF_SIZE);
 	v_zap(pitch_ref_buf, PITCH_EST_BUF_SIZE);
@@ -53,7 +53,7 @@ void imbe_vocoder::encode_init(void)
 }
 
 
-void imbe_vocoder::encode(IMBE_PARAM *imbe_param, Word16 *frame_vector, Word16 *snd)
+void imbe_vocoder_impl::encode(IMBE_PARAM *imbe_param, Word16 *frame_vector, Word16 *snd)
 {
 	Word16 i;
 	Word16 *wr_ptr, *sig_ptr;

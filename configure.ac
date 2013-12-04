@@ -35,8 +35,7 @@ AC_PROG_CXX
 AC_PROG_INSTALL
 
 AC_ENABLE_SHARED	dnl do build shared libraries
-AC_DISABLE_STATIC	dnl don't build static libraries
-AC_PROG_LIBTOOL
+LT_INIT	dnl use libtool for shared libraries
 
 if test "x$CXX_FOR_BUILD" = x
 then

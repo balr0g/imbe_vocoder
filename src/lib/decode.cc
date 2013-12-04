@@ -31,13 +31,13 @@
 #include "aux_sub.h"
 #include "encode.h"
 #include "dsp_sub.h"
-#include "imbe_vocoder.h"
+#include "imbe_vocoder_impl.h"
 
 #include <string.h>
 
 
 
-void imbe_vocoder::decode_init(IMBE_PARAM *imbe_param)
+void imbe_vocoder_impl::decode_init(IMBE_PARAM *imbe_param)
 {
 	v_synt_init();
 	uv_synt_init();
@@ -52,7 +52,7 @@ void imbe_vocoder::decode_init(IMBE_PARAM *imbe_param)
 }
 
 
-void imbe_vocoder::decode(IMBE_PARAM *imbe_param, Word16 *frame_vector, Word16 *snd)
+void imbe_vocoder_impl::decode(IMBE_PARAM *imbe_param, Word16 *frame_vector, Word16 *snd)
 {
 	Word16 snd_tmp[FRAME];
 	Word16 j;

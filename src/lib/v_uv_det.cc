@@ -34,7 +34,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "encode.h"
-#include "imbe_vocoder.h"
+#include "imbe_vocoder_impl.h"
 
 
 #define CNST_0_5625_Q1_15   0x4800
@@ -58,13 +58,13 @@ extern FILE *fp_in, *fp_out;
 extern int frame_cnt;
 
 
-void imbe_vocoder::pitch_ref_init(void)
+void imbe_vocoder_impl::pitch_ref_init(void)
 {	
 	v_zap(v_uv_dsn, NUM_BANDS_MAX);
 	th_max = 0;
 }
 
-Word16 imbe_vocoder::voiced_sa_calc(Word32 num, Word16 den)
+Word16 imbe_vocoder_impl::voiced_sa_calc(Word32 num, Word16 den)
 {
 	Word16 tmp;
 	Word32 L_tmp;
@@ -78,7 +78,7 @@ Word16 imbe_vocoder::voiced_sa_calc(Word32 num, Word16 den)
 	return extract_h(L_tmp);
 }
 
-Word16 imbe_vocoder::unvoiced_sa_calc(Word32 num, Word16 den)
+Word16 imbe_vocoder_impl::unvoiced_sa_calc(Word32 num, Word16 den)
 {
 	Word16 shift, tmp;
 	Word32 L_tmp;
@@ -100,7 +100,7 @@ Word16 imbe_vocoder::unvoiced_sa_calc(Word32 num, Word16 den)
 // Voiced/Unvoiced Determination & Spectral Amplitudes Estimation
 //
 //=============================================================================
-void imbe_vocoder::v_uv_det(IMBE_PARAM *imbe_param, Cmplx16 *fft_buf)
+void imbe_vocoder_impl::v_uv_det(IMBE_PARAM *imbe_param, Cmplx16 *fft_buf)
 {
 	Word16 i, j, index_a_save, tmp, index_wr;
 	Word32 fund_freq, fund_freq_2, fund_freq_acc_a, fund_freq_acc_b, fund_freq_acc, fund_fr_acc, L_tmp, amp_re_acc, amp_im_acc;
