@@ -1,4 +1,4 @@
-#include <cinttypes>
+#include <stdint.h>
 
 class imbe_vocoder_impl;
 class imbe_vocoder
