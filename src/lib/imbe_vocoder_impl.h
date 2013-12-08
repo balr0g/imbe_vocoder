@@ -4,8 +4,8 @@
  * Version 1.0 (c) Copyright 2009
  */
 /* -*- c++ -*- */
-#ifndef INCLUDED_IMBE_VOCODER_H
-#define INCLUDED_IMBE_VOCODER_H
+#ifndef INCLUDED_IMBE_VOCODER_IMPL_H
+#define INCLUDED_IMBE_VOCODER_IMPL_H
 
 #include <stdint.h>
 #include <string.h>
@@ -86,4 +86,4 @@ private:
 	void encode_init(void);
 };
 
-#endif /* INCLUDED_IMBE_VOCODER_H */
+#endif /* INCLUDED_IMBE_VOCODER_IMPL_H */
